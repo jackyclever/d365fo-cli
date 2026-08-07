@@ -49,6 +49,36 @@ public class EdtSuggesterTests : IDisposable
             CocExtensions: Array.Empty<ExtractedCoc>(),
             Labels: Array.Empty<ExtractedLabel>());
         _repo.ApplyExtract(batch);
+
+        var crowdedBatch = new ExtractBatch(
+            Model: "CustomModel",
+            Publisher: "Test",
+            Layer: "cus",
+            IsCustom: true,
+            Tables: Array.Empty<ExtractedTable>(),
+            Classes: Array.Empty<ExtractedClass>(),
+            Edts: Enumerable.Range(0, 101)
+                .Select(i => new ExtractedEdt($"CustomItem{i:D3}", null, "String", null, 20))
+                .ToArray(),
+            Enums: Array.Empty<ExtractedEnum>(),
+            MenuItems: Array.Empty<ExtractedMenuItem>(),
+            CocExtensions: Array.Empty<ExtractedCoc>(),
+            Labels: Array.Empty<ExtractedLabel>());
+        _repo.ApplyExtract(crowdedBatch);
+
+        var standardBatch = new ExtractBatch(
+            Model: "Foundation",
+            Publisher: "Microsoft",
+            Layer: "sys",
+            IsCustom: false,
+            Tables: Array.Empty<ExtractedTable>(),
+            Classes: Array.Empty<ExtractedClass>(),
+            Edts: new[] { new ExtractedEdt("ItemId", "ItemIdBase", "String", null, 20) },
+            Enums: Array.Empty<ExtractedEnum>(),
+            MenuItems: Array.Empty<ExtractedMenuItem>(),
+            CocExtensions: Array.Empty<ExtractedCoc>(),
+            Labels: Array.Empty<ExtractedLabel>());
+        _repo.ApplyExtract(standardBatch);
     }
 
     [Fact]
@@ -58,6 +88,20 @@ public class EdtSuggesterTests : IDisposable
         Assert.NotEmpty(suggestions);
         Assert.Equal("CustAccount", suggestions[0].Edt.Name);
         Assert.Equal(1.0, suggestions[0].Confidence);
+    }
+
+    [Fact]
+    public void Exact_name_is_not_lost_when_fuzzy_candidates_are_truncated()
+    {
+        Assert.DoesNotContain(_repo.SearchEdts("Item", 100),
+            edt => string.Equals(edt.Name, "ItemId", StringComparison.OrdinalIgnoreCase));
+
+        var suggestions = EdtSuggester.Suggest(_repo, "itemid", limit: 5);
+
+        Assert.NotEmpty(suggestions);
+        Assert.Equal("ItemId", suggestions[0].Edt.Name);
+        Assert.Equal(1.0, suggestions[0].Confidence);
+        Assert.Equal("exact match", suggestions[0].Reason);
     }
 
     [Fact]

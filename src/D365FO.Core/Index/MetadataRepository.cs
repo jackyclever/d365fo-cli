@@ -431,7 +431,7 @@ public sealed partial class MetadataRepository
                    e.BaseType, e.Label, e.StringSize,
                    e.ReferenceTable, e.FormHelp, e.AnalysisUsage, e.EnumType
             FROM Edts e JOIN Models m ON m.ModelId = e.ModelId
-            WHERE e.Name = @name LIMIT 1", new { name });
+            WHERE e.Name = @name COLLATE NOCASE LIMIT 1", new { name });
     }
 
     /// <summary>
